@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grounding DINO</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+
+/* ============================================================
+   Paper semantic map, shared design system.
+   Every page in one archive uses this exact block, so the
+   archive reads as one system.
+
+   --st1 .. --st4 are four colour-coded concepts that recur
+   across YOUR research (set them in research-profile.md).
+   Example for open-set video work: known / unknown / missed /
+   background. Keep the same mapping on every page.
+   ============================================================ */
+
+:root{
+  --paper:#EDEFF1;
+  --surface:#F9FAFB;
+  --surface-2:#E2E6EA;
+  --ink:#12161A;
+  --ink-2:#39414A;
+  --muted:#68727C;
+  --rule:#CFD5DA;
+  --rule-strong:#AFB8C0;
+
+  --accent:#6A3FB5;
+  --accent-soft:#EBE3FA;
+  --accent-line:#C3ADEC;
+
+  --st1:#0D7563;
+  --st1-soft:#DAEFE9;
+  --st2:#6A3FB5;
+  --st2-soft:#EBE3FA;
+  --st3:#B04A17;
+  --st3-soft:#FAE4D6;
+  --st4:#6F7B85;
+  --st4-soft:#E1E6EA;
+
+  --shadow:0 1px 2px rgba(18,22,26,.05), 0 8px 24px -16px rgba(18,22,26,.22);
+
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1015;
+    --surface:#151A20;
+    --surface-2:#1D242B;
+    --ink:#E8EDF2;
+    --ink-2:#BCC6CF;
+    --muted:#8A96A1;
+    --rule:#242B33;
+    --rule-strong:#3A444E;
+
+    --accent:#BB9FF2;
+    --accent-soft:#231B37;
+    --accent-line:#4A3C74;
+
+    --st1:#4FC9AD;
+    --st1-soft:#0E2A25;
+    --st2:#BB9FF2;
+    --st2-soft:#231B37;
+    --st3:#F0925A;
+    --st3-soft:#2F1810;
+    --st4:#95A1AB;
+    --st4-soft:#1B2229;
+
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+
+:root[data-theme="dark"]{
+  --paper:#0D1015;
+  --surface:#151A20;
+  --surface-2:#1D242B;
+  --ink:#E8EDF2;
+  --ink-2:#BCC6CF;
+  --muted:#8A96A1;
+  --rule:#242B33;
+  --rule-strong:#3A444E;
+
+  --accent:#BB9FF2;
+  --accent-soft:#231B37;
+  --accent-line:#4A3C74;
+
+  --st1:#4FC9AD;
+  --st1-soft:#0E2A25;
+  --st2:#BB9FF2;
+  --st2-soft:#231B37;
+  --st3:#F0925A;
+  --st3-soft:#2F1810;
+  --st4:#95A1AB;
+  --st4-soft:#1B2229;
+
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.prose{max-width:70ch}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--paper);
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.topbar-in{
+  max-width:1080px;margin:0 auto;padding:10px 24px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-family:var(--display);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;
+}
+/* ---------- archive nav, scales to any number of papers ---------- */
+.nav{
+  max-width:1080px;margin:0 auto;padding:9px 24px;
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--display);font-size:12.5px;
+}
+.nav a{text-decoration:none;white-space:nowrap}
+.nav-home{
+  display:inline-flex;align-items:baseline;gap:9px;
+  color:var(--ink);font-weight:600;letter-spacing:.01em;flex:none;
+}
+.nav-home .k{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.nav-home:hover,.nav-home:hover .k{color:var(--accent)}
+.nav-home.on{color:var(--accent)}
+.nav-home.on .k{color:var(--accent)}
+.nav-div{width:1px;align-self:stretch;background:var(--rule);flex:none;margin:2px 0}
+
+/* the disclosure that holds every paper, so the bar never grows */
+.nav-all{position:relative;flex:none;min-width:0}
+.nav-all > summary{
+  list-style:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:4px 10px;border-radius:3px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);white-space:nowrap;
+}
+.nav-all > summary::-webkit-details-marker{display:none}
+.nav-all > summary:hover{border-color:var(--accent-line);color:var(--accent)}
+.nav-all > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nav-cur{display:inline-flex;align-items:baseline;gap:7px;font-weight:600;color:var(--accent);
+         max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+.nav-cur b{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent)}
+.nav-all[open] > summary{border-color:var(--accent);background:var(--accent-soft)}
+.nav-count{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.nav-caret{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.nav-all[open] .nav-caret{color:var(--accent)}
+
+.nav-sheet{
+  position:absolute;top:calc(100% + 7px);left:0;z-index:60;
+  background:var(--surface);border:1px solid var(--rule-strong);border-radius:4px;
+  box-shadow:var(--shadow);padding:10px;
+  display:grid;grid-template-columns:repeat(2,minmax(190px,1fr));gap:6px;
+  min-width:min(560px,88vw);max-height:62vh;overflow:auto;
+}
+.nav-sheet-head{grid-column:1/-1;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+                color:var(--muted);padding:2px 2px 6px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.nav-p{
+  padding:5px 10px;border-radius:3px;border:1px solid var(--rule);
+  color:var(--ink-2);background:var(--paper);
+  display:flex;align-items:baseline;gap:8px;min-width:0;
+}
+.nav-p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-p b{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rule-strong);flex:none}
+.nav-p:hover{border-color:var(--accent-line);color:var(--accent)}
+.nav-p:hover b{color:var(--accent)}
+.nav-p.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-p.on b{color:var(--accent)}
+.nav-p.soon{border-style:dashed;color:var(--muted);background:transparent;cursor:default}
+.nav-p.soon b{color:var(--rule-strong)}
+.nav-meta{margin-left:auto;flex:none;color:var(--muted);font-size:11px;
+          letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+.nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+@media (max-width:720px){
+  .nav{padding:8px 16px;gap:10px}
+  .nav-meta{display:none}
+  .nav-home .k{display:none}
+  .nav-count{display:none}
+  .nav{position:relative}
+  .nav-all{position:static}
+  .nav-sheet{grid-template-columns:1fr;min-width:0;left:16px;right:16px}
+  .nav-cur{max-width:38vw}
+}
+
+.topbar a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+.topbar a:hover{color:var(--accent);border-bottom-color:var(--accent-line)}
+.topbar .here{color:var(--ink);font-weight:600}
+.topbar .sep{color:var(--rule-strong)}
+.topbar .spacer{margin-left:auto}
+
+/* ---------- type ---------- */
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,4.4vw,46px);line-height:1.08;font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(21px,2.4vw,26px);line-height:1.2;font-weight:650;letter-spacing:-.01em}
+h3{font-size:17.5px;font-weight:650;letter-spacing:-.005em}
+h4{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+p{margin:0 0 1em}
+a{color:var(--accent)}
+strong{font-weight:600}
+.lede{font-size:19.5px;line-height:1.55;color:var(--ink-2)}
+.small{font-size:14.5px;line-height:1.55}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:.88em;font-variant-ligatures:none}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.eyebrow{
+  font-family:var(--display);font-size:11.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+}
+
+/* ---------- segment motif ---------- */
+.segbar{display:flex;gap:3px;height:5px;margin:0 0 18px}
+.segbar i{display:block;height:100%;border-radius:1px}
+.segbar .s-st1{background:var(--st1);flex:2.2}
+.segbar .s-gap{background:var(--rule);flex:1.1}
+.segbar .s-st2{background:var(--st2);flex:1.5}
+.segbar .s-gap2{background:var(--rule);flex:.7}
+.segbar .s-st3{background:var(--st3);flex:1.1}
+.segbar .s-tail{background:var(--rule);flex:3.4}
+
+/* ---------- sections ---------- */
+section{padding:44px 0}
+.section-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.rule{height:1px;background:var(--rule);border:0;margin:0}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}
+.chip{
+  font-family:var(--display);font-size:12px;font-weight:500;letter-spacing:.02em;
+  padding:3px 9px;border-radius:3px;border:1px solid var(--rule-strong);
+  color:var(--ink-2);background:var(--surface);white-space:nowrap;
+}
+.chip.ok{border-color:var(--st1);color:var(--st1);background:var(--st1-soft)}
+.chip.no{border-color:var(--rule-strong);color:var(--muted)}
+.chip.hot{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chip.warn{border-color:var(--st3);color:var(--st3);background:var(--st3-soft)}
+
+/* ---------- state tokens ---------- */
+.tok{font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.07em;
+     text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.tok.st1{background:var(--st1-soft);color:var(--st1)}
+.tok.st2{background:var(--st2-soft);color:var(--st2)}
+.tok.st3{background:var(--st3-soft);color:var(--st3)}
+.tok.st4{background:var(--st4-soft);color:var(--st4)}
+
+/* ---------- links row ---------- */
+.linkrow{display:flex;flex-wrap:wrap;gap:0 18px;font-family:var(--display);font-size:14px;margin:0}
+.linkrow a{text-decoration:none;border-bottom:1px solid var(--accent-line);padding-bottom:1px}
+.linkrow a:hover{border-bottom-color:var(--accent)}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.tiles.c3{grid-template-columns:repeat(3,1fr)}
+.tiles.c2{grid-template-columns:repeat(2,1fr)}
+.tile{background:var(--surface);padding:20px 20px 22px;display:flex;flex-direction:column;gap:8px}
+.tile h4{margin-bottom:2px}
+.tile p{margin:0;font-size:15.5px;line-height:1.55}
+.tile .big{font-family:var(--display);font-size:31px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile.lift{background:var(--accent-soft)}
+.tile.lift h4{color:var(--accent)}
+
+/* ---------- figure ---------- */
+figure{margin:26px 0;padding:0}
+.figbox{border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:18px 18px 8px;overflow-x:auto}
+.figbox svg{display:block;min-width:520px;width:100%;height:auto}
+figcaption{font-size:14px;line-height:1.5;color:var(--muted);margin-top:10px;padding:0 2px}
+.svg-label{font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.04em}
+.svg-tick{font-family:var(--mono);font-size:10.5px}
+.svg-title{font-family:var(--display);font-size:13px;font-weight:650}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+caption{text-align:left;font-family:var(--display);font-size:13px;font-weight:600;
+        color:var(--muted);padding:12px 14px 0;caption-side:top}
+th,td{padding:8px 14px;text-align:right;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.06em;
+         text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--rule-strong)}
+tbody td{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+tbody td:first-child{font-family:var(--display);font-size:14px}
+tbody tr:last-child td{border-bottom:0}
+tr.best td{background:var(--accent-soft);font-weight:600}
+tr.best td:first-child{color:var(--accent)}
+td.win{color:var(--st1);font-weight:600}
+
+/* ---------- equations ---------- */
+.eq{
+  font-family:var(--mono);font-size:14px;line-height:1.75;
+  background:var(--surface-2);border-left:2px solid var(--accent);
+  padding:12px 16px;margin:14px 0;overflow-x:auto;white-space:pre;
+}
+.eqno{float:right;color:var(--muted);font-size:12px}
+
+/* ---------- code ---------- */
+pre{
+  font-family:var(--mono);font-size:12.8px;line-height:1.62;
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:4px;
+  padding:14px 16px;margin:14px 0;overflow-x:auto;
+}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent)}
+p code,li code,dd code,figcaption code{overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+     padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+pre code{background:none;border:0;padding:0;font-size:1em}
+
+/* ---------- details ---------- */
+.deep{border-top:1px solid var(--rule-strong)}
+details{border-bottom:1px solid var(--rule)}
+details > summary{
+  list-style:none;cursor:pointer;padding:16px 0;
+  display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:baseline;
+}
+details > summary::-webkit-details-marker{display:none}
+summary .idx{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:3px}
+summary .st{font-family:var(--display);font-size:18px;font-weight:650;letter-spacing:-.005em}
+summary .teaser{display:block;font-family:var(--body);font-size:14.5px;
+                font-weight:400;color:var(--muted);margin-top:2px;letter-spacing:0}
+summary .caret{font-family:var(--mono);font-size:12px;color:var(--muted)}
+details[open] > summary .caret{color:var(--accent)}
+details[open] > summary{border-bottom:1px dashed var(--rule)}
+summary:hover .st{color:var(--accent)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+.details-body{padding:20px 0 34px 48px}
+@media (max-width:640px){.details-body{padding-left:0}}
+
+.btn{
+  font-family:var(--display);font-size:12.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;background:var(--surface);color:var(--ink-2);
+  border:1px solid var(--rule-strong);border-radius:3px;padding:6px 12px;cursor:pointer;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- callouts ---------- */
+.note{
+  border:1px solid var(--rule);border-left:3px solid var(--accent);
+  background:var(--surface);border-radius:0 4px 4px 0;padding:16px 18px;margin:20px 0;
+}
+.note h4{margin-bottom:6px;color:var(--accent)}
+.note.warn{border-left-color:var(--st3)}
+.note.warn h4{color:var(--st3)}
+.note p:last-child{margin-bottom:0}
+
+/* ---------- key/value list ---------- */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 20px;font-size:15px;margin:0}
+.kv dt{font-family:var(--display);font-size:12.5px;font-weight:600;letter-spacing:.05em;
+       text-transform:uppercase;color:var(--muted);padding-top:4px}
+.kv dd{margin:0}
+
+/* ---------- lists ---------- */
+ul.tight,ol.tight{margin:0 0 1em;padding-left:1.15em}
+ul.tight li,ol.tight li{margin-bottom:.5em}
+ul.plain{list-style:none;margin:0;padding:0}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--rule);padding:26px 0 54px;color:var(--muted);font-size:14px}
+
+@media (max-width:760px){
+  .tiles.c3{grid-template-columns:1fr}
+  .tiles.c2{grid-template-columns:1fr}
+  body{font-size:16.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+
+</style>
+</head>
+<body>
+<div class="topbar">
+<nav class="nav" aria-label="Reading archive">
+  <a class="nav-home" href="index.html"><span class="k">Map</span>Small, Unseen, From Above</a>
+  <span class="nav-div" aria-hidden="true"></span>
+  <details class="nav-all">
+    <summary aria-label="Browse all 1 papers"><span class="nav-cur"><b>01</b>Grounding DINO</span><span class="nav-count">1 paper</span><span class="nav-caret" aria-hidden="true">&#9662;</span></summary>
+    <div class="nav-sheet">
+      <div class="nav-sheet-head">1 read &middot; newest last</div>
+      <a class="nav-p on" href="01-grounding-dino.html" aria-current="page"><b>01</b><span>Grounding DINO</span></a>
+      <span class="nav-p soon"><b>02</b><span>next</span></span>
+    </div>
+  </details>
+  <span class="nav-meta">ECCV 2024 &middot; read 07 Nov 2026</span>
+</nav>
+</div>
+
+<div class="wrap">
+
+<section style="padding-top:38px;padding-bottom:26px">
+  <div class="segbar" aria-hidden="true">
+    <i class="s-st1"></i><i class="s-gap"></i><i class="s-st2"></i><i class="s-gap2"></i><i class="s-st3"></i><i class="s-tail"></i>
+  </div>
+  <p class="eyebrow" style="margin:0 0 10px">Paper 01 &middot; ECCV 2024 &middot; Open-set object detection</p>
+  <h1>Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection</h1>
+  <p class="lede" style="margin:16px 0 18px;max-width:64ch">A DINO detector that reads a text prompt and fuses it with the image at three places, so that any phrase in the prompt can become a detection class.</p>
+  <dl class="kv" style="margin-bottom:20px">
+    <dt>Authors</dt><dd>Shilong Liu, Zhaoyang Zeng, Tianhe Ren, Feng Li, Hao Zhang, Jie Yang, Qing Jiang, Chunyuan Li, Jianwei Yang, Hang Su, Jun Zhu, Lei Zhang &middot; IDEA, Tsinghua, HKUST, CUHK-Shenzhen, Microsoft Research, SCUT</dd>
+    <dt>Venue</dt><dd>ECCV 2024</dd>
+    <dt>Code</dt><dd><a href="https://github.com/IDEA-Research/GroundingDINO">IDEA-Research/GroundingDINO</a>, inference and evaluation only</dd>
+    <dt>Read from</dt><dd>arXiv v5 (19 Jul 2024), method section and all tables; the repo at commit 856dde2</dd>
+  </dl>
+  <ul class="chips">
+    <li class="chip ok">Code released</li>
+    <li class="chip warn">No training code</li>
+    <li class="chip">COCO</li><li class="chip">LVIS</li><li class="chip">ODinW</li><li class="chip">RefCOCO/+/g</li>
+    <li class="chip hot">Baseline you will be compared to</li>
+  </ul>
+  <p class="linkrow" style="margin-top:16px"><a href="https://arxiv.org/abs/2303.05499">Paper</a><a href="https://github.com/IDEA-Research/GroundingDINO">Code</a><a href="index.html">Back to the map</a></p>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="section-head"><h2>The sixty second read</h2><span class="muted small">Everything below this block is optional.</span></div>
+  <div class="tiles c3" style="margin-top:20px">
+    <div class="tile"><h4>The problem it names</h4><p>Detect any object named in free text, a category list or a referring expression, with one model. Earlier open-set detectors fused language late, only at the classifier head, which limits how much the text can shape the visual features.</p></div>
+    <div class="tile"><h4>The mechanism</h4><p>Fuse language into DINO three times: a feature enhancer with image-to-text and text-to-image cross-attention, language-guided query selection that picks the 900 image tokens most similar to any word, and an extra text cross-attention in every decoder layer. Classes are scored by a dot product between query and word features.</p></div>
+    <div class="tile"><h4>Headline result</h4><div class="big">52.5</div><p>COCO AP zero-shot with Swin-L, pre-trained on O365, OpenImages and GoldG, against 49.8 for GLIP-L (Table 2). Zero-shot here means no COCO images, not unseen categories.</p></div>
+    <div class="tile"><h4>What is actually new</h4><p>Mostly the placement of fusion inside a strong DETR-style detector, plus a sub-sentence attention mask so category names in one prompt do not attend to each other. The individual pieces (bi-attention fusion, contrastive word heads, grounded pre-training) come from GLIP and MDETR.</p></div>
+    <div class="tile"><h4>The honest verdict</h4><p>A very strong, widely used open-set baseline, built by careful integration rather than one new idea. The ablation gains are small, and the training recipe cannot be reproduced from the release.</p></div>
+    <div class="tile lift"><h4>Why it matters to you</h4><p>It is the default baseline a reviewer will expect for unseen aerial classes, and it does nothing for small objects: no tiling, no resolution change, 900 queries per image. Its weak rare-class LVIS numbers (APr 18.1 for T) are the closest proxy for your novel aerial classes.</p></div>
+  </div>
+</section>
+
+<section style="padding-top:20px">
+  <div class="section-head"><h2>How it decides, in one picture</h2></div>
+  <p class="prose">Two masks do most of the work. On the left, the prompt "small car . boat ." is split at every period: words attend only inside their own phrase. On the right, every image token is scored by its best match against any word, and only the top 900 become decoder queries. A small object that never wins a top-900 slot is never detected, whatever the decoder does later.</p>
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 900 330" role="img" aria-label="Left: block-diagonal text attention mask for the prompt small car dot boat dot. Right: image tokens scored by max similarity to any word, top tokens selected as queries, one small object token falls below the cut.">
+        <text class="svg-title" x="20" y="24" fill="var(--ink)">Sub-sentence text mask</text>
+        <g transform="translate(70,60)">
+          <g class="svg-tick" fill="var(--muted)">
+            <text x="-8" y="20" text-anchor="end">small</text><text x="-8" y="56" text-anchor="end">car</text><text x="-8" y="92" text-anchor="end">.</text><text x="-8" y="128" text-anchor="end">boat</text><text x="-8" y="164" text-anchor="end">.</text>
+            <text x="18" y="200" text-anchor="middle">small</text><text x="54" y="200" text-anchor="middle">car</text><text x="90" y="200" text-anchor="middle">.</text><text x="126" y="200" text-anchor="middle">boat</text><text x="162" y="200" text-anchor="middle">.</text>
+          </g>
+          <g stroke="var(--rule)" fill="var(--surface-2)">
+            <rect x="0" y="0" width="180" height="180"/>
+          </g>
+          <g fill="var(--st1)" opacity=".85">
+            <rect x="0" y="0" width="108" height="108"/>
+          </g>
+          <g fill="var(--st2)" opacity=".85">
+            <rect x="108" y="108" width="72" height="72"/>
+          </g>
+          <g stroke="var(--paper)" stroke-width="1.5" fill="none">
+            <path d="M36 0V180M72 0V180M108 0V180M144 0V180M0 36H180M0 72H180M0 108H180M0 144H180"/>
+          </g>
+        </g>
+        <text class="svg-label" x="70" y="290" fill="var(--ink-2)">attend only within a phrase</text>
+        <text class="svg-tick" x="70" y="308" fill="var(--muted)">split tokens: [CLS] [SEP] "." "?"</text>
+
+        <line x1="300" y1="30" x2="300" y2="310" stroke="var(--rule)"/>
+
+        <text class="svg-title" x="330" y="24" fill="var(--ink)">Language-guided query selection</text>
+        <g transform="translate(330,50)">
+          <text class="svg-tick" x="0" y="10" fill="var(--muted)">image tokens, sorted by max similarity to any word</text>
+          <g>
+            <rect x="0"   y="22" width="26" height="120" fill="var(--st1)"/>
+            <rect x="30"  y="34" width="26" height="108" fill="var(--st1)"/>
+            <rect x="60"  y="46" width="26" height="96"  fill="var(--st2)"/>
+            <rect x="90"  y="58" width="26" height="84"  fill="var(--st1)"/>
+            <rect x="120" y="70" width="26" height="72"  fill="var(--st2)"/>
+            <rect x="150" y="80" width="26" height="62"  fill="var(--st4)"/>
+            <rect x="180" y="88" width="26" height="54"  fill="var(--st4)"/>
+            <rect x="210" y="96" width="26" height="46"  fill="var(--st1)"/>
+            <rect x="240" y="104" width="26" height="38" fill="var(--st4)"/>
+            <rect x="300" y="112" width="26" height="30" fill="var(--st3)"/>
+            <rect x="330" y="118" width="26" height="24" fill="var(--st4)"/>
+            <rect x="360" y="124" width="26" height="18" fill="var(--st4)"/>
+            <rect x="390" y="128" width="26" height="14" fill="var(--st4)"/>
+            <rect x="420" y="132" width="26" height="10" fill="var(--st4)"/>
+            <rect x="450" y="135" width="26" height="7"  fill="var(--st4)"/>
+          </g>
+          <line x1="283" y1="14" x2="283" y2="160" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text class="svg-label" x="140" y="180" text-anchor="middle" fill="var(--ink)">top 900 become queries</text>
+          <text class="svg-label" x="383" y="180" text-anchor="middle" fill="var(--muted)">dropped before decoding</text>
+          <path d="M313 110 C 313 80, 320 66, 344 62" fill="none" stroke="var(--st3)" stroke-width="1.5"/>
+          <text class="svg-label" x="350" y="58" fill="var(--st3)">small boat token,</text>
+          <text class="svg-label" x="350" y="74" fill="var(--st3)">scored low, never decoded</text>
+        </g>
+        <g transform="translate(330,268)" class="svg-tick">
+          <rect x="0" y="-9" width="10" height="10" fill="var(--st1)"/><text x="16" y="0" fill="var(--ink-2)">base class object</text>
+          <rect x="140" y="-9" width="10" height="10" fill="var(--st2)"/><text x="156" y="0" fill="var(--ink-2)">novel class object</text>
+          <rect x="290" y="-9" width="10" height="10" fill="var(--st3)"/><text x="306" y="0" fill="var(--ink-2)">missed object</text>
+          <rect x="420" y="-9" width="10" height="10" fill="var(--st4)"/><text x="436" y="0" fill="var(--ink-2)">background</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Schematic, not data. The right panel illustrates the selection rule in <code>transformer.py</code> (max over words, then top-k with k = 900); the missed small token is a hypothetical case for aerial images, not something the paper measures.</figcaption>
+  </figure>
+</section>
+
+<section style="padding-top:8px">
+  <div class="section-head"><h2>Where it stops, and where your work starts</h2></div>
+  <p class="prose">Grounding DINO decides what to look at before it decides what things are: the query selection step keeps 900 image tokens per image, chosen by text similarity. That is fine for COCO, where objects are big and few. For aerial frames with hundreds of tiny vehicles, recall is capped by that budget and by the encoder's feature resolution, and nothing in the paper measures it. Its "zero-shot" claims also lean on Objects365 and GoldG, which already cover most COCO categories, so the paper says little about classes that are truly unseen. Small objects and truly novel classes are both outside what it tests.</p>
+  <div class="note">
+    <h4>The one sentence to put in your related work</h4>
+    <p>Grounding DINO fuses language into the encoder, query selection and decoder of a DETR-style detector and reaches 52.5 zero-shot AP on COCO, but it keeps a fixed budget of 900 queries per image and is evaluated on benchmarks dominated by medium and large objects whose categories overlap its pre-training data.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="deep">
+  <div class="section-head" style="margin-top:28px"><h2>The full breakdown</h2><button class="btn" id="expandAll" type="button">Expand all</button></div>
+
+  <details>
+    <summary><span class="idx">01</span><span class="st">Problem setup, and what "open-set" means here<span class="teaser">Open-set in this paper means "named by text", not "never seen in training".</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <p>Input is an image and a text prompt. Output is a set of boxes, each paired with the noun phrase in the prompt it matches. For ordinary detection the prompt is the category names joined by periods ("car . boat . tank ."); for referring expressions it is a sentence, and the top-scoring box is returned.</p>
+      <p>There is no fixed label space. Classification is replaced by a similarity score between each decoder query and each word token, so a new class only needs a new word. This is the GLIP formulation, applied to a DINO detector instead of a DyHead one.</p>
+      <div class="note warn"><h4>Read "zero-shot" carefully</h4><p>Every zero-shot COCO number is transfer from a model trained on Objects365 and grounding data, which share most of COCO's 80 categories. It is zero-shot with respect to COCO images, not with respect to categories. The LVIS rare split and ODinW are the closer tests of unseen concepts, and both are much weaker (Tables 3 and 4).</p></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">02</span><span class="st">Feature enhancer, fusion in the encoder<span class="teaser">Removing it is the most expensive ablation, and it hurts LVIS three times more than COCO.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <p>A Swin backbone gives multi-scale image features; BERT-base gives word features. Six enhancer layers then update both. Each layer runs deformable self-attention on the image tokens, plain self-attention on the text tokens (with the sub-sentence mask from block 04), image-to-text and text-to-image cross-attention, and a feed-forward network on each side.</p>
+      <div class="eq">X_img, X_txt  = Swin(I), BERT(T)
+for each of 6 layers:
+    X_img = DeformSelfAttn(X_img)
+    X_txt = SelfAttn(X_txt, mask = sub_sentence_mask)
+    X_img, X_txt = BiCrossAttn(X_img, X_txt)
+    X_img, X_txt = FFN(X_img), FFN(X_txt)</div>
+      <p class="small muted">Notation ours, following Section 3.1 and <code>fuse_modules.py</code>.</p>
+      <div class="note"><h4>A detail from the code</h4><p>The bi-attention clamps attention logits to plus or minus 50000 so it can run in half precision (<code>fuse_modules.py</code>, the <code>clamp_min_for_underflow</code> and <code>clamp_max_for_overflow</code> flags). Worth knowing if you change the fusion and start seeing NaNs.</p></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">03</span><span class="st">Language-guided query selection, and the 900-query budget<span class="teaser">Queries are the image tokens that best match any word; everything else is dropped.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <p>After the encoder, every image token is scored against every word token. The token's score is its maximum over words, and the top N<sub>q</sub> = 900 tokens are kept. Their positions give the initial anchor boxes; the content part of each query is a learned embedding, as in DINO's mixed query selection.</p>
+      <div class="eq">s_i   = max_j  ( x_img_i . x_txt_j )        over all word tokens j
+Q     = topk_i ( s_i ,  k = 900 )</div>
+      <p class="small muted">Section 3.2; implemented in <code>transformer.py</code> as <code>enc_outputs_class_unselected.max(-1)</code> followed by <code>torch.topk</code>.</p>
+      <div class="note"><h4>Why this is the line that matters for small objects</h4><p>The budget is per image, not per object or per area. On a 4000 pixel aerial frame with hundreds of vehicles, all of them compete for 900 slots with each other and with background that happens to look like the text. The paper never varies N<sub>q</sub> or reports recall by object size, so the effect is unmeasured.</p></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">04</span><span class="st">Cross-modality decoder and sub-sentence text features<span class="teaser">Two small changes: a text cross-attention in each decoder layer, and a mask that keeps category names apart.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <p>Each of the six decoder layers is a DINO decoder layer with one extra block: after self-attention and deformable image cross-attention, the query attends to the word features, then a feed-forward network (Section 3.3; <code>self.ca_text</code> in <code>transformer.py</code>).</p>
+      <p>When many category names are concatenated into one prompt, plain self-attention lets "car" attend to "boat", which entangles unrelated classes. The sub-sentence mask makes text attention block-diagonal: tokens attend only inside their own phrase, with phrases split at the special tokens <code>[CLS]</code>, <code>[SEP]</code>, <code>.</code> and <code>?</code>, and position ids restart in each phrase (Section 3.4; <code>generate_masks_with_special_tokens_and_transfer_map</code> in <code>bertwarper.py</code>).</p>
+      <div class="note"><h4>Practical consequence</h4><p>The period is not punctuation, it is the class separator. A prompt written as "car, boat, tank" is one phrase to this model. <code>preprocess_caption</code> lowercases the prompt and appends a final period, but does not split commas.</p></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">05</span><span class="st">Loss and inference<span class="teaser">Training uses a contrastive word loss with focal weighting; inference is two thresholds.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <p>Training (Section 3.5): L1 and GIoU losses on boxes, a contrastive classification loss between each query and the word tokens with sigmoid focal loss, Hungarian matching on the same costs, and auxiliary losses after every decoder layer and the encoder outputs. Matching and loss weights are listed in Table 8 below.</p>
+      <p>Inference, from <code>util/inference.py</code>:</p>
+      <div class="eq">logits   = sigmoid( query . word )               shape (900, 256)
+keep box  if  max_over_words(logits) &gt; box_threshold
+phrase   = the words whose logit  &gt; text_threshold</div>
+      <p>The README uses <code>box_threshold = 0.35</code> and <code>text_threshold = 0.25</code>; the demo script defaults to 0.3 and 0.25. For COCO-style AP evaluation the thresholds are not applied, all 900 queries are ranked.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">06</span><span class="st">Data, splits and every number in the paper<span class="teaser">Strong on COCO and referring expressions; much weaker on rare LVIS classes and on ODinW.</span></span><span class="caret">+</span></summary>
+    <div class="details-body">
+      <dl class="kv" style="margin-bottom:20px">
+        <dt>Detection</dt><dd>Objects365 (O365), OpenImages (OI)</dd>
+        <dt>Grounding</dt><dd>GoldG (Flickr30k entities and Visual Genome from MDETR), RefC (RefCOCO, RefCOCO+, RefCOCOg)</dd>
+        <dt>Captions</dt><dd>Cap4M, pseudo-labelled image-text pairs from GLIP</dd>
+        <dt>Evaluation</dt><dd>COCO 2017 val and test-dev, LVIS minival, ODinW (35 datasets), RefCOCO/+/g</dd>
+      </dl>
+      <div class="tablewrap"><table>
+        <caption>Table 2. COCO box AP. Zero-shot on 2017 val; fine-tuned on 2017 val / test-dev. Selected rows. Bracketed value from a model trained at 1.5x image size.</caption>
+        <thead><tr><th>Model</th><th>Backbone</th><th>Pre-training data</th><th>Zero-shot</th><th>Fine-tuned</th></tr></thead>
+        <tbody>
+          <tr><td>DINO</td><td>Swin-T</td><td>O365</td><td>46.2</td><td>56.9 / -</td></tr>
+          <tr><td>GLIP-T (B)</td><td>Swin-T</td><td>O365</td><td>44.9</td><td>53.8 / -</td></tr>
+          <tr><td>GLIP-T (C)</td><td>Swin-T</td><td>O365, GoldG</td><td>46.7</td><td>55.1 / -</td></tr>
+          <tr><td>GLIP-L</td><td>Swin-L</td><td>FourODs, GoldG, Cap24M</td><td>49.8</td><td>60.8 / 61.0</td></tr>
+          <tr><td>Grounding DINO T</td><td>Swin-T</td><td>O365</td><td>46.7</td><td>56.9 / -</td></tr>
+          <tr><td>Grounding DINO T</td><td>Swin-T</td><td>O365, GoldG</td><td>48.1</td><td>57.1 / -</td></tr>
+          <tr><td>Grounding DINO T</td><td>Swin-T</td><td>O365, GoldG, Cap4M</td><td>48.4</td><td>57.2 / -</td></tr>
+          <tr class="best"><td>Grounding DINO L</td><td>Swin-L</td><td>O365, OI, GoldG</td><td>52.5</td><td>62.6 / 62.7 (63.0 / 63.0)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><h4>Read this table sideways</h4><p>With the same backbone and the same O365 data, Grounding DINO T and plain DINO are 46.7 against 46.2 zero-shot and identical after fine-tuning (56.9). Against GLIP-T (B) on the same O365 data, plain DINO already gains 1.3 AP (46.2 against 44.9) and the fusion adds 0.5 more. Most of the gap to GLIP comes from DINO being a stronger detector, not from the fusion.</p></div>
+
+      <div class="tablewrap" style="margin-top:22px"><table>
+        <caption>Table 3. LVIS minival, zero-shot. AP and rare / common / frequent.</caption>
+        <thead><tr><th>Model</th><th>Pre-training data</th><th>AP</th><th>APr / APc / APf</th></tr></thead>
+        <tbody>
+          <tr><td>GLIP-T</td><td>O365, GoldG, Cap4M</td><td>26.0</td><td>20.8 / 21.4 / 31.0</td></tr>
+          <tr><td>DetCLIPv2 (Swin-T)</td><td>O365, GoldG, CC15M</td><td>40.4</td><td>36.0 / 41.7 / 40.0</td></tr>
+          <tr><td>Grounding DINO T</td><td>O365, GoldG</td><td>25.6</td><td>14.4 / 19.6 / 32.2</td></tr>
+          <tr class="best"><td>Grounding DINO T</td><td>O365, GoldG, Cap4M</td><td>27.4</td><td>18.1 / 23.3 / 32.7</td></tr>
+          <tr><td>Grounding DINO L</td><td>O365, OI, GoldG, Cap4M, COCO, RefC</td><td>33.9</td><td>22.2 / 30.7 / 38.8</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><h4>The number to watch for unseen classes</h4><p>On rare LVIS classes Grounding DINO T is below GLIP-T (18.1 against 20.8 APr with the same data), and far below DetCLIPv2 (36.0). DetCLIPv2 also trains on far more caption data (CC15M), so the comparison is not matched, but against GLIP-T it is. Rare-class recall is its weak point.</p></div>
+
+      <div class="tablewrap" style="margin-top:22px"><table>
+        <caption>Table 4. ODinW, zero-shot. Average and median AP over the test sets. Selected rows.</caption>
+        <thead><tr><th>Model</th><th>Size</th><th>Pre-training data</th><th>AP avg</th><th>AP median</th></tr></thead>
+        <tbody>
+          <tr><td>GLIP-T</td><td>232M</td><td>O365, GoldG, Cap4M</td><td>19.6</td><td>5.1</td></tr>
+          <tr><td>DetCLIP (Swin-L)</td><td>267M</td><td>O365, GoldG, YFCC1M</td><td>24.9</td><td>18.3</td></tr>
+          <tr><td>Florence</td><td>&asymp;841M</td><td>FLD900M, O365, GoldG</td><td>25.8</td><td>14.3</td></tr>
+          <tr><td>Grounding DINO T</td><td>172M</td><td>O365, GoldG, Cap4M</td><td>22.3</td><td>11.9</td></tr>
+          <tr class="best"><td>Grounding DINO L</td><td>341M</td><td>O365, OI, GoldG, Cap4M, COCO, RefC</td><td>26.1</td><td>18.4</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="tablewrap" style="margin-top:22px"><table>
+        <caption>Table 6. Adding RefC and COCO to pre-training. All Swin-T.</caption>
+        <thead><tr><th>Pre-training data</th><th>COCO zero-shot</th><th>COCO fine-tune</th><th>LVIS zero-shot</th><th>ODinW zero-shot</th></tr></thead>
+        <tbody>
+          <tr><td>O365, GoldG</td><td>48.1</td><td>57.1</td><td>25.6</td><td>20.0</td></tr>
+          <tr><td>O365, GoldG, RefC</td><td>48.5</td><td>57.3</td><td>21.9</td><td>17.7</td></tr>
+          <tr><td>O365, GoldG, RefC, COCO</td><td>56.1</td><td>57.5</td><td>22.3</td><td>17.4</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><h4>Read this table sideways</h4><p>More grounding data helps COCO and hurts the long tail: LVIS drops from 25.6 to 21.9 and ODinW from 20.0 to 17.7. If your target is unusual aerial classes, the data mix that maximises COCO is the wrong one.</p></div>
+
+      <div class="tablewrap" style="margin-top:22px"><table>
+        <caption>Table 7. Ablations. O365 pre-training, Swin-T.</caption>
+        <thead><tr><th>Model</th><th>COCO zero-shot</th><th>COCO fine-tune</th><th>LVIS zero-shot</th></tr></thead>
+        <tbody>
+          <tr class="best"><td>Full model</td><td>46.7</td><td>56.9</td><td>16.1</td></tr>
+          <tr><td>w/o encoder fusion</td><td>45.8</td><td>56.1</td><td>13.1</td></tr>
+          <tr><td>static query selection</td><td>46.3</td><td>56.6</td><td>13.6</td></tr>
+          <tr><td>w/o text cross-attention</td><td>46.1</td><td>56.3</td><td>14.3</td></tr>
+          <tr><td>word-level text prompt</td><td>46.4</td><td>56.6</td><td>15.6</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><h4>Read this table sideways</h4><p>Every component is worth under 1 AP on COCO but 0.5 to 3.0 AP on LVIS. The design matters most where classes are rare, which is the regime the main tables are weakest on. Each ablation is a single run with no variance reported.</p></div>
+      <p class="small muted" style="margin-top:14px">Table 5 (referring expressions) is omitted here as off-topic for this archive: fine-tuned Grounding DINO L reaches 90.56 / 93.19 / 88.24 on RefCOCO val / testA / testB.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">07</span><span class="st">The code, file by file<span class="teaser">Inference only. No loss, no matcher, no training loop; prompts past 256 tokens are silently cut.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <h3 style="margin:0 0 8px">Where things are</h3>
+<pre>groundingdino/
+  config/GroundingDINO_SwinT_OGC.py   <span class="c"># the T model: O365, GoldG, Cap4M</span>
+  config/GroundingDINO_SwinB_cfg.py   <span class="c"># the B checkpoint</span>
+  models/GroundingDINO/
+    groundingdino.py   <span class="c"># top-level model, tokenisation, 256-token cap</span>
+    transformer.py     <span class="c"># encoder, query selection, decoder with ca_text</span>
+    fuse_modules.py    <span class="c"># BiAttentionBlock, the image-text fusion</span>
+    bertwarper.py      <span class="c"># BERT wrapper and the sub-sentence mask</span>
+    utils.py           <span class="c"># ContrastiveEmbed, the word-level classifier</span>
+    ms_deform_attn.py  <span class="c"># deformable attention, CUDA op</span>
+  util/inference.py    <span class="c"># load_model, predict, thresholds</span>
+demo/test_ap_on_coco.py <span class="c"># COCO zero-shot evaluation</span></pre>
+
+      <h3 style="margin:26px 0 8px">The classifier, as actually implemented</h3>
+<pre><code><span class="c"># models/GroundingDINO/utils.py, ContrastiveEmbed.forward</span>
+res = x @ y.transpose(-1, -2)            <span class="c"># query . word, no scale, no bias</span>
+res.masked_fill_(~text_token_mask[:, None, :], float("-inf"))
+new_res = torch.full((*res.shape[:-1], self.max_text_len), float("-inf"))
+new_res[..., : res.shape[-1]] = res      <span class="c"># padded to 256 word slots</span></code></pre>
+
+      <h3 style="margin:26px 0 8px">Query selection, as actually implemented</h3>
+<pre><code><span class="c"># models/GroundingDINO/transformer.py</span>
+enc_outputs_class_unselected = self.enc_out_class_embed(output_memory, text_dict)
+topk_logits = enc_outputs_class_unselected.max(-1)[0]
+topk_proposals = torch.topk(topk_logits, topk, dim=1)[1]   <span class="c"># topk = num_queries = 900</span></code></pre>
+
+      <div class="note warn"><h4>Where the code and the paper diverge</h4>
+        <p><strong>No training code.</strong> The repository contains no loss, matcher or training script. The contrastive focal loss of Section 3.5 cannot be checked or reused from this release; <code>sigmoid_focal_loss</code> is imported but the criterion is not there.</p>
+        <p><strong>Prompts are truncated at 256 tokens without a warning.</strong> <code>groundingdino.py</code> slices the tokens and the text features to <code>max_text_len = 256</code>. A long aerial class list loses its last classes silently; LVIS's 1203 names cannot fit in one prompt, and how the paper splits them is not in the release.</p>
+        <p><strong>Small number mismatch.</strong> The README says the COCO zero-shot script should give 48.5 for the T checkpoint, the paper reports 48.4.</p>
+        <p><strong>Leftover settings.</strong> The config carries DINO's denoising-training fields (<code>dn_box_noise_scale</code>, <code>dn_label_noise_ratio</code> and others), which do nothing at inference.</p>
+      </div>
+
+      <h3 style="margin:26px 0 8px">Hyperparameters</h3>
+      <div class="tablewrap"><table><caption>Model settings from config/GroundingDINO_SwinT_OGC.py; training settings from Table 8 of the paper</caption>
+        <thead><tr><th>Setting</th><th>Value</th><th>Setting</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>encoder / decoder layers</td><td>6 / 6</td><td>optimizer</td><td>AdamW</td></tr>
+          <tr><td>hidden dim</td><td>256</td><td>lr</td><td>1e-4</td></tr>
+          <tr><td>feed-forward dim</td><td>2048</td><td>lr, image and text backbone</td><td>1e-5</td></tr>
+          <tr><td>heads</td><td>8</td><td>weight decay</td><td>0.0001</td></tr>
+          <tr><td>queries</td><td>900</td><td>clip max norm</td><td>0.1</td></tr>
+          <tr><td>feature levels</td><td>4</td><td>match cost class / bbox / giou</td><td>1.0 / 5.0 / 2.0</td></tr>
+          <tr><td>max text length</td><td>256</td><td>loss coef class / bbox / giou</td><td>2.0 / 5.0 / 2.0</td></tr>
+          <tr><td>text encoder</td><td>bert-base-uncased</td><td>dropout</td><td>0.0</td></tr>
+        </tbody></table></div>
+
+      <h3 style="margin:26px 0 8px">Running it</h3>
+<pre>git clone https://github.com/IDEA-Research/GroundingDINO.git
+cd GroundingDINO
+export CUDA_HOME=/path/to/cuda     <span class="c"># without it the deformable op builds CPU-only</span>
+pip install -e .
+python demo/inference_on_a_image.py \
+  -c groundingdino/config/GroundingDINO_SwinT_OGC.py \
+  -p weights/groundingdino_swint_ogc.pth \
+  -i image.jpg -o out/ -t "small car . boat ."</pre>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="idx">08</span><span class="st">Weak points, and what a reviewer would push on<span class="teaser">Category overlap behind "zero-shot", no size breakdown, and a recipe nobody can rerun.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <ol class="tight">
+        <li><strong>Zero-shot is category-overlapped.</strong> O365 covers most COCO classes, so the headline 52.5 measures domain transfer more than open-set ability. There is no evaluation on categories held out from all pre-training data.</li>
+        <li><strong>No breakdown by object size.</strong> COCO AP<sub>S</sub> is not reported in the tables read here, and nothing on aerial or remote-sensing data.</li>
+        <li><strong>Small ablation margins, single runs.</strong> Most components move COCO by under 1 AP with no variance reported (Table 7).</li>
+        <li><strong>Weak on the long tail.</strong> Below GLIP-T on LVIS rare with matched data (Table 3).</li>
+        <li><strong>Not reproducible from the release.</strong> No training code, and the large-scale data mixes (Cap4M pseudo-labels) are hard to rebuild.</li>
+        <li><strong>The B checkpoint is not zero-shot on ODinW.</strong> It was trained with ODinW-35 and COCO in its data (README checkpoint table), so using it as a zero-shot baseline on those benchmarks would be wrong.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details open>
+    <summary><span class="idx">09</span><span class="st">What to do with this, for your submission<span class="teaser">Run it as your baseline, tiled and untiled, and measure what the query budget costs.</span></span><span class="caret">+</span></summary>
+    <div class="details-body prose">
+      <h3 style="margin:0 0 8px">It is your baseline, so run it two ways</h3>
+      <p>Use the T checkpoint (OGC, no COCO or ODinW in its data) on your aerial set as it comes, and again with image tiling. The gap between the two is a direct measure of how much small-object recall the 900-query budget and the input resolution cost.</p>
+      <h3 style="margin:24px 0 8px">Measure recall by object size and by query budget</h3>
+      <p>The paper never varies N<sub>q</sub>. A recall-versus-N<sub>q</sub> curve on small objects is cheap (one config value at inference) and would be a new, clean result for your related-work section or a motivating figure.</p>
+      <h3 style="margin:24px 0 8px">Split class prompts deliberately</h3>
+      <p>Keep each prompt under 256 tokens, separate classes with " . ", and state the chunking in your protocol so the comparison is fair.</p>
+      <div class="note"><h4>Do-not-claim register</h4><p>Do not claim to be the first to fuse language inside the detector encoder or decoder: this paper does both, and GLIP fused before it. Do not call Grounding DINO's COCO numbers "novel class" results when comparing; call them zero-shot transfer.</p></div>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p>Grounding DINO &middot; paper 01 of the Small, Unseen, From Above archive (an example) &middot; read 07 Nov 2026. Numbers are from the paper's own tables (arXiv v5); code observations are from commit 856dde2.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById('expandAll');
+  if(!btn) return;
+  btn.addEventListener('click', function(){
+    var all = document.querySelectorAll('.deep details');
+    var opening = btn.textContent.trim() === 'Expand all';
+    for (var i = 0; i < all.length; i++) all[i].open = opening;
+    btn.textContent = opening ? 'Collapse all' : 'Expand all';
+  });
+})();
+</script>
+
+</body>
+</html>

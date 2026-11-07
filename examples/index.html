@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Small, Unseen, From Above</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+
+/* ============================================================
+   Paper semantic map, shared design system.
+   Every page in one archive uses this exact block, so the
+   archive reads as one system.
+
+   --st1 .. --st4 are four colour-coded concepts that recur
+   across YOUR research (set them in research-profile.md).
+   Example for open-set video work: known / unknown / missed /
+   background. Keep the same mapping on every page.
+   ============================================================ */
+
+:root{
+  --paper:#EDEFF1;
+  --surface:#F9FAFB;
+  --surface-2:#E2E6EA;
+  --ink:#12161A;
+  --ink-2:#39414A;
+  --muted:#68727C;
+  --rule:#CFD5DA;
+  --rule-strong:#AFB8C0;
+
+  --accent:#6A3FB5;
+  --accent-soft:#EBE3FA;
+  --accent-line:#C3ADEC;
+
+  --st1:#0D7563;
+  --st1-soft:#DAEFE9;
+  --st2:#6A3FB5;
+  --st2-soft:#EBE3FA;
+  --st3:#B04A17;
+  --st3-soft:#FAE4D6;
+  --st4:#6F7B85;
+  --st4-soft:#E1E6EA;
+
+  --shadow:0 1px 2px rgba(18,22,26,.05), 0 8px 24px -16px rgba(18,22,26,.22);
+
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1015;
+    --surface:#151A20;
+    --surface-2:#1D242B;
+    --ink:#E8EDF2;
+    --ink-2:#BCC6CF;
+    --muted:#8A96A1;
+    --rule:#242B33;
+    --rule-strong:#3A444E;
+
+    --accent:#BB9FF2;
+    --accent-soft:#231B37;
+    --accent-line:#4A3C74;
+
+    --st1:#4FC9AD;
+    --st1-soft:#0E2A25;
+    --st2:#BB9FF2;
+    --st2-soft:#231B37;
+    --st3:#F0925A;
+    --st3-soft:#2F1810;
+    --st4:#95A1AB;
+    --st4-soft:#1B2229;
+
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+
+:root[data-theme="dark"]{
+  --paper:#0D1015;
+  --surface:#151A20;
+  --surface-2:#1D242B;
+  --ink:#E8EDF2;
+  --ink-2:#BCC6CF;
+  --muted:#8A96A1;
+  --rule:#242B33;
+  --rule-strong:#3A444E;
+
+  --accent:#BB9FF2;
+  --accent-soft:#231B37;
+  --accent-line:#4A3C74;
+
+  --st1:#4FC9AD;
+  --st1-soft:#0E2A25;
+  --st2:#BB9FF2;
+  --st2-soft:#231B37;
+  --st3:#F0925A;
+  --st3-soft:#2F1810;
+  --st4:#95A1AB;
+  --st4-soft:#1B2229;
+
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.prose{max-width:70ch}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--paper);
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.topbar-in{
+  max-width:1080px;margin:0 auto;padding:10px 24px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-family:var(--display);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;
+}
+/* ---------- archive nav, scales to any number of papers ---------- */
+.nav{
+  max-width:1080px;margin:0 auto;padding:9px 24px;
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--display);font-size:12.5px;
+}
+.nav a{text-decoration:none;white-space:nowrap}
+.nav-home{
+  display:inline-flex;align-items:baseline;gap:9px;
+  color:var(--ink);font-weight:600;letter-spacing:.01em;flex:none;
+}
+.nav-home .k{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.nav-home:hover,.nav-home:hover .k{color:var(--accent)}
+.nav-home.on{color:var(--accent)}
+.nav-home.on .k{color:var(--accent)}
+.nav-div{width:1px;align-self:stretch;background:var(--rule);flex:none;margin:2px 0}
+
+/* the disclosure that holds every paper, so the bar never grows */
+.nav-all{position:relative;flex:none;min-width:0}
+.nav-all > summary{
+  list-style:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:4px 10px;border-radius:3px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink-2);white-space:nowrap;
+}
+.nav-all > summary::-webkit-details-marker{display:none}
+.nav-all > summary:hover{border-color:var(--accent-line);color:var(--accent)}
+.nav-all > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nav-cur{display:inline-flex;align-items:baseline;gap:7px;font-weight:600;color:var(--accent);
+         max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+.nav-cur b{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent)}
+.nav-all[open] > summary{border-color:var(--accent);background:var(--accent-soft)}
+.nav-count{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.nav-caret{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.nav-all[open] .nav-caret{color:var(--accent)}
+
+.nav-sheet{
+  position:absolute;top:calc(100% + 7px);left:0;z-index:60;
+  background:var(--surface);border:1px solid var(--rule-strong);border-radius:4px;
+  box-shadow:var(--shadow);padding:10px;
+  display:grid;grid-template-columns:repeat(2,minmax(190px,1fr));gap:6px;
+  min-width:min(560px,88vw);max-height:62vh;overflow:auto;
+}
+.nav-sheet-head{grid-column:1/-1;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+                color:var(--muted);padding:2px 2px 6px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.nav-p{
+  padding:5px 10px;border-radius:3px;border:1px solid var(--rule);
+  color:var(--ink-2);background:var(--paper);
+  display:flex;align-items:baseline;gap:8px;min-width:0;
+}
+.nav-p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-p b{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rule-strong);flex:none}
+.nav-p:hover{border-color:var(--accent-line);color:var(--accent)}
+.nav-p:hover b{color:var(--accent)}
+.nav-p.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-p.on b{color:var(--accent)}
+.nav-p.soon{border-style:dashed;color:var(--muted);background:transparent;cursor:default}
+.nav-p.soon b{color:var(--rule-strong)}
+.nav-meta{margin-left:auto;flex:none;color:var(--muted);font-size:11px;
+          letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+.nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+@media (max-width:720px){
+  .nav{padding:8px 16px;gap:10px}
+  .nav-meta{display:none}
+  .nav-home .k{display:none}
+  .nav-count{display:none}
+  .nav{position:relative}
+  .nav-all{position:static}
+  .nav-sheet{grid-template-columns:1fr;min-width:0;left:16px;right:16px}
+  .nav-cur{max-width:38vw}
+}
+
+.topbar a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+.topbar a:hover{color:var(--accent);border-bottom-color:var(--accent-line)}
+.topbar .here{color:var(--ink);font-weight:600}
+.topbar .sep{color:var(--rule-strong)}
+.topbar .spacer{margin-left:auto}
+
+/* ---------- type ---------- */
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,4.4vw,46px);line-height:1.08;font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(21px,2.4vw,26px);line-height:1.2;font-weight:650;letter-spacing:-.01em}
+h3{font-size:17.5px;font-weight:650;letter-spacing:-.005em}
+h4{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+p{margin:0 0 1em}
+a{color:var(--accent)}
+strong{font-weight:600}
+.lede{font-size:19.5px;line-height:1.55;color:var(--ink-2)}
+.small{font-size:14.5px;line-height:1.55}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:.88em;font-variant-ligatures:none}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.eyebrow{
+  font-family:var(--display);font-size:11.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+}
+
+/* ---------- segment motif ---------- */
+.segbar{display:flex;gap:3px;height:5px;margin:0 0 18px}
+.segbar i{display:block;height:100%;border-radius:1px}
+.segbar .s-st1{background:var(--st1);flex:2.2}
+.segbar .s-gap{background:var(--rule);flex:1.1}
+.segbar .s-st2{background:var(--st2);flex:1.5}
+.segbar .s-gap2{background:var(--rule);flex:.7}
+.segbar .s-st3{background:var(--st3);flex:1.1}
+.segbar .s-tail{background:var(--rule);flex:3.4}
+
+/* ---------- sections ---------- */
+section{padding:44px 0}
+.section-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.rule{height:1px;background:var(--rule);border:0;margin:0}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}
+.chip{
+  font-family:var(--display);font-size:12px;font-weight:500;letter-spacing:.02em;
+  padding:3px 9px;border-radius:3px;border:1px solid var(--rule-strong);
+  color:var(--ink-2);background:var(--surface);white-space:nowrap;
+}
+.chip.ok{border-color:var(--st1);color:var(--st1);background:var(--st1-soft)}
+.chip.no{border-color:var(--rule-strong);color:var(--muted)}
+.chip.hot{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chip.warn{border-color:var(--st3);color:var(--st3);background:var(--st3-soft)}
+
+/* ---------- state tokens ---------- */
+.tok{font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.07em;
+     text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.tok.st1{background:var(--st1-soft);color:var(--st1)}
+.tok.st2{background:var(--st2-soft);color:var(--st2)}
+.tok.st3{background:var(--st3-soft);color:var(--st3)}
+.tok.st4{background:var(--st4-soft);color:var(--st4)}
+
+/* ---------- links row ---------- */
+.linkrow{display:flex;flex-wrap:wrap;gap:0 18px;font-family:var(--display);font-size:14px;margin:0}
+.linkrow a{text-decoration:none;border-bottom:1px solid var(--accent-line);padding-bottom:1px}
+.linkrow a:hover{border-bottom-color:var(--accent)}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.tiles.c3{grid-template-columns:repeat(3,1fr)}
+.tiles.c2{grid-template-columns:repeat(2,1fr)}
+.tile{background:var(--surface);padding:20px 20px 22px;display:flex;flex-direction:column;gap:8px}
+.tile h4{margin-bottom:2px}
+.tile p{margin:0;font-size:15.5px;line-height:1.55}
+.tile .big{font-family:var(--display);font-size:31px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile.lift{background:var(--accent-soft)}
+.tile.lift h4{color:var(--accent)}
+
+/* ---------- figure ---------- */
+figure{margin:26px 0;padding:0}
+.figbox{border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:18px 18px 8px;overflow-x:auto}
+.figbox svg{display:block;min-width:520px;width:100%;height:auto}
+figcaption{font-size:14px;line-height:1.5;color:var(--muted);margin-top:10px;padding:0 2px}
+.svg-label{font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.04em}
+.svg-tick{font-family:var(--mono);font-size:10.5px}
+.svg-title{font-family:var(--display);font-size:13px;font-weight:650}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+caption{text-align:left;font-family:var(--display);font-size:13px;font-weight:600;
+        color:var(--muted);padding:12px 14px 0;caption-side:top}
+th,td{padding:8px 14px;text-align:right;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.06em;
+         text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--rule-strong)}
+tbody td{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+tbody td:first-child{font-family:var(--display);font-size:14px}
+tbody tr:last-child td{border-bottom:0}
+tr.best td{background:var(--accent-soft);font-weight:600}
+tr.best td:first-child{color:var(--accent)}
+td.win{color:var(--st1);font-weight:600}
+
+/* ---------- equations ---------- */
+.eq{
+  font-family:var(--mono);font-size:14px;line-height:1.75;
+  background:var(--surface-2);border-left:2px solid var(--accent);
+  padding:12px 16px;margin:14px 0;overflow-x:auto;white-space:pre;
+}
+.eqno{float:right;color:var(--muted);font-size:12px}
+
+/* ---------- code ---------- */
+pre{
+  font-family:var(--mono);font-size:12.8px;line-height:1.62;
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:4px;
+  padding:14px 16px;margin:14px 0;overflow-x:auto;
+}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent)}
+p code,li code,dd code,figcaption code{overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+     padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+pre code{background:none;border:0;padding:0;font-size:1em}
+
+/* ---------- details ---------- */
+.deep{border-top:1px solid var(--rule-strong)}
+details{border-bottom:1px solid var(--rule)}
+details > summary{
+  list-style:none;cursor:pointer;padding:16px 0;
+  display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:baseline;
+}
+details > summary::-webkit-details-marker{display:none}
+summary .idx{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:3px}
+summary .st{font-family:var(--display);font-size:18px;font-weight:650;letter-spacing:-.005em}
+summary .teaser{display:block;font-family:var(--body);font-size:14.5px;
+                font-weight:400;color:var(--muted);margin-top:2px;letter-spacing:0}
+summary .caret{font-family:var(--mono);font-size:12px;color:var(--muted)}
+details[open] > summary .caret{color:var(--accent)}
+details[open] > summary{border-bottom:1px dashed var(--rule)}
+summary:hover .st{color:var(--accent)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+.details-body{padding:20px 0 34px 48px}
+@media (max-width:640px){.details-body{padding-left:0}}
+
+.btn{
+  font-family:var(--display);font-size:12.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;background:var(--surface);color:var(--ink-2);
+  border:1px solid var(--rule-strong);border-radius:3px;padding:6px 12px;cursor:pointer;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- callouts ---------- */
+.note{
+  border:1px solid var(--rule);border-left:3px solid var(--accent);
+  background:var(--surface);border-radius:0 4px 4px 0;padding:16px 18px;margin:20px 0;
+}
+.note h4{margin-bottom:6px;color:var(--accent)}
+.note.warn{border-left-color:var(--st3)}
+.note.warn h4{color:var(--st3)}
+.note p:last-child{margin-bottom:0}
+
+/* ---------- key/value list ---------- */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 20px;font-size:15px;margin:0}
+.kv dt{font-family:var(--display);font-size:12.5px;font-weight:600;letter-spacing:.05em;
+       text-transform:uppercase;color:var(--muted);padding-top:4px}
+.kv dd{margin:0}
+
+/* ---------- lists ---------- */
+ul.tight,ol.tight{margin:0 0 1em;padding-left:1.15em}
+ul.tight li,ol.tight li{margin-bottom:.5em}
+ul.plain{list-style:none;margin:0;padding:0}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--rule);padding:26px 0 54px;color:var(--muted);font-size:14px}
+
+@media (max-width:760px){
+  .tiles.c3{grid-template-columns:1fr}
+  .tiles.c2{grid-template-columns:1fr}
+  body{font-size:16.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+
+/* ============================================================
+   Archive index only. Sits on top of the shared design system
+   above and uses its tokens, so light and dark both work.
+   ============================================================ */
+html{scroll-padding-top:72px}
+.blk{padding:60px 0 16px;border-top:1px solid var(--rule)}
+.blk > .prose{margin-top:10px}
+
+/* hero */
+.hero{padding:56px 0 44px}
+.hero h1{font-size:clamp(38px,6vw,68px);line-height:1;letter-spacing:-.035em;margin:14px 0 0}
+.hero .lede{max-width:58ch;margin:22px 0 0}
+.status{display:flex;flex-wrap:wrap;gap:6px 0;margin:24px 0 0;padding:12px 0 0;border-top:1px dashed var(--rule);
+        font-family:var(--display);font-size:13.5px;color:var(--muted)}
+.status > span + span::before{content:"\00b7";margin:0 10px;color:var(--rule-strong)}
+.status b{font-family:var(--mono);font-weight:700;color:var(--ink)}
+.defs .tile.d1{box-shadow:inset 0 3px 0 var(--st1)}
+.defs .tile.d2{box-shadow:inset 0 3px 0 var(--st2)}
+.defs .tile.d3{box-shadow:inset 0 3px 0 var(--st3)}
+.defs .tile.d4{box-shadow:inset 0 3px 0 var(--st4)}
+
+/* field map: two axes, four quadrants */
+.fmap{display:grid;grid-template-columns:28px 1fr;grid-template-rows:1fr 28px;gap:8px;margin-top:24px}
+.fmap .ylab{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-family:var(--display);
+            font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.fmap .xlab{grid-column:2;text-align:center;font-family:var(--display);font-size:11px;font-weight:600;
+            letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.quads{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.quad{background:var(--surface);padding:18px 18px 20px;min-height:150px}
+.quad.target{background:var(--accent-soft)}
+.quad h3{font-size:15.5px;margin-bottom:4px}
+.quad.target h3{color:var(--accent)}
+.quad p{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin:0 0 10px}
+.dots{display:flex;flex-wrap:wrap;gap:6px}
+.dots a{font-family:var(--mono);font-size:11.5px;text-decoration:none;padding:2px 7px;border-radius:3px;
+        border:1px solid var(--rule-strong);color:var(--ink-2);background:var(--paper)}
+.dots a:hover{border-color:var(--accent);color:var(--accent)}
+
+/* axes */
+.axes{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-top:22px}
+.axis{background:var(--surface);padding:16px 18px;display:grid;grid-template-columns:44px 1fr;gap:4px 14px}
+.axis .ax-id{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);padding-top:3px}
+.axis h3{font-size:16px}
+.axis p{grid-column:2;margin:0;font-size:14.5px;color:var(--ink-2)}
+.axis .chips{grid-column:2;margin-top:8px}
+
+/* coverage matrix */
+.matrix td{font-family:var(--display);font-size:13px;text-align:left}
+.matrix td:first-child a{text-decoration:none;font-weight:600}
+.matrix th{text-align:left}
+
+/* gap board */
+.gaps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:22px}
+.gap{border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:16px 18px}
+.gap .gid{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)}
+.gap h3{margin:4px 0 8px;font-size:16.5px}
+.gap p{font-size:14.5px;line-height:1.55;margin:0 0 8px}
+.gap .ev{font-size:13.5px;color:var(--muted)}
+.gap.open{border-left:3px solid var(--st1)}
+.gap.weak{border-left:3px solid var(--st3)}
+.gap.closed{border-left:3px solid var(--rule-strong);opacity:.8}
+
+/* reading queue */
+.queue{list-style:none;margin:22px 0 0;padding:0;counter-reset:q}
+.queue li{display:grid;grid-template-columns:34px 1fr auto;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.queue li::before{counter-increment:q;content:counter(q,decimal-leading-zero);font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:3px}
+.queue h3{font-size:15.5px}
+.queue .meta{font-size:13.5px;color:var(--muted);grid-column:2}
+.queue .why{font-size:14.5px;grid-column:2;margin:4px 0 0}
+.queue .state{font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.queue .state.done{color:var(--st1)} .queue .state.next{color:var(--accent)} .queue .state.blocked{color:var(--st3)}
+
+@media (max-width:760px){
+  .gaps{grid-template-columns:1fr}
+  .quads{grid-template-columns:1fr}
+  .fmap{grid-template-columns:1fr;grid-template-rows:auto}
+  .fmap .ylab{display:none}
+  .fmap .xlab{grid-column:1}
+}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+<nav class="nav" aria-label="Reading archive">
+  <a class="nav-home on" href="index.html" aria-current="page"><span class="k">Map</span>Small, Unseen, From Above</a>
+  <span class="nav-div" aria-hidden="true"></span>
+  <details class="nav-all">
+    <summary aria-label="Browse all 1 papers"><span class="nav-cur">All papers</span><span class="nav-count">1 paper</span><span class="nav-caret" aria-hidden="true">&#9662;</span></summary>
+    <div class="nav-sheet">
+      <div class="nav-sheet-head">1 read &middot; newest last</div>
+      <a class="nav-p" href="01-grounding-dino.html"><b>01</b><span>Grounding DINO</span></a>
+      <span class="nav-p soon"><b>02</b><span>next</span></span>
+    </div>
+  </details>
+  <span class="nav-meta">Example archive &middot; updated 07 Nov 2026</span>
+</nav>
+</div>
+
+<div class="wrap">
+
+<section class="hero" id="top">
+  <p class="eyebrow">Landscape map &middot; an example archive</p>
+  <h1>Small, Unseen, From Above</h1>
+  <p class="lede">Can an open-vocabulary detector find small objects in aerial images, for classes it never saw boxes for, without any box labels for those classes?</p>
+  <div class="tiles c2 defs" style="margin-top:28px">
+    <div class="tile d1"><h4>Base class</h4><p>A category the detector was trained on with boxes, in any of its pre-training data.</p></div>
+    <div class="tile d2"><h4>Novel class</h4><p>A category with no boxes anywhere in training. Most "zero-shot" benchmarks do not actually test this.</p></div>
+    <div class="tile d3"><h4>Missed object</h4><p>A real object, of either kind, that never becomes a detection, for example because it lost its query slot.</p></div>
+    <div class="tile d4"><h4>Background</h4><p>Everything else, including clutter that looks like the text prompt.</p></div>
+  </div>
+  <p class="status"><span><b>1</b> paper read</span><span><b>3</b> gaps open</span><span>next: OWL-ViT</span></p>
+</section>
+
+<section class="blk" id="field">
+  <h2>The field, on the two axes that matter</h2>
+  <p class="prose">How much supervision novel classes get, and how deep language goes into the detector. Two papers that both say "open-vocabulary" in the title can sit in opposite corners.</p>
+  <div class="fmap">
+    <div class="ylab">Language enters: head only &rarr; deep fusion</div>
+    <div class="quads">
+      <div class="quad"><h3>Deep fusion, some labels</h3><p>Fused detectors fine-tuned with a few boxes of the new classes.</p><div class="dots"></div></div>
+      <div class="quad target"><h3>Deep fusion, no labels</h3><p>Where this archive is aimed. Grounding DINO sits here, but only for categories its pre-training already covered.</p><div class="dots"><a href="01-grounding-dino.html">Grounding DINO</a></div></div>
+      <div class="quad"><h3>Head only, some labels</h3><p>Closed-set detectors with a text classifier swapped in, then few-shot tuned.</p><div class="dots"></div></div>
+      <div class="quad"><h3>Head only, no labels</h3><p>CLIP-style detectors that score regions against text at the end.</p><div class="dots"></div></div>
+    </div>
+    <div class="xlab">Supervision for novel classes: some boxes &larr; &rarr; none</div>
+  </div>
+</section>
+
+<section class="blk" id="axes">
+  <h2>The axes every paper gets placed on</h2>
+  <p class="prose">Chosen so that papers that sound alike in the abstract land in different places.</p>
+  <div class="axes">
+    <div class="axis"><span class="ax-id">A1</span><h3>What supervision do new classes get?</h3><p>The honest version of "zero-shot".</p><ul class="chips"><li class="chip">none</li><li class="chip">image tags</li><li class="chip">a few boxes</li></ul></div>
+    <div class="axis"><span class="ax-id">A2</span><h3>Where does language enter the detector?</h3><p>Late fusion cannot reshape features; deep fusion can.</p><ul class="chips"><li class="chip">only at the head</li><li class="chip">encoder</li><li class="chip">encoder and decoder</li></ul></div>
+    <div class="axis"><span class="ax-id">A3</span><h3>Where does the vocabulary come from?</h3><p>Fixed lists and free prompts fail differently.</p><ul class="chips"><li class="chip">fixed list</li><li class="chip">free text prompt</li><li class="chip">mined captions</li></ul></div>
+    <div class="axis"><span class="ax-id">A4</span><h3>Is anything done for small objects?</h3><p>The axis aerial work lives or dies on.</p><ul class="chips"><li class="chip">nothing</li><li class="chip">higher resolution</li><li class="chip">multi-scale or tiling</li></ul></div>
+  </div>
+</section>
+
+<section class="blk" id="matrix">
+  <h2>Coverage matrix</h2>
+  <p class="prose">One row per paper read. <span class="chip hot">hot</span> marks a value on this archive's target.</p>
+  <div class="tablewrap" style="margin-top:20px"><table class="matrix">
+    <thead><tr><th>Paper</th><th>A1 supervision</th><th>A2 language</th><th>A3 vocabulary</th><th>A4 small objects</th><th>Code</th></tr></thead>
+    <tbody>
+      <tr><td><a href="01-grounding-dino.html">Grounding DINO</a> <span class="muted small">ECCV 2024</span></td><td><span class="chip hot">none</span> but categories overlap pre-training</td><td><span class="chip hot">encoder and decoder</span></td><td>free text prompt, 256 tokens</td><td>nothing</td><td>inference only</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="blk" id="gaps">
+  <h2>The gap board</h2>
+  <p class="prose">Claims here are only as strong as the reading behind them, and one paper is almost no reading. Each gap names the papers that support or weaken it.</p>
+  <div class="gaps">
+    <div class="gap open"><span class="gid">G1</span><h3>Nobody measures what the query budget costs small objects</h3><p>Grounding DINO keeps 900 queries per image and never varies it or reports recall by size. On dense aerial frames this budget could be the main bottleneck.</p><p class="ev">Evidence: Grounding DINO, blocks 03 and 08 &middot; last revised 07 Nov 2026</p></div>
+    <div class="gap open"><span class="gid">G2</span><h3>"Zero-shot" is rarely tested on truly unseen categories</h3><p>The headline numbers transfer across datasets whose categories overlap. Aerial-only classes would be a cleaner test.</p><p class="ev">Evidence: Grounding DINO, block 01 &middot; last revised 07 Nov 2026</p></div>
+    <div class="gap open"><span class="gid">G3</span><h3>Deep fusion helps the long tail most, but the long tail is where it is weakest</h3><p>Fusion components are worth more on LVIS than COCO, yet rare-class AP stays low. Whether that holds for aerial rare classes is unknown.</p><p class="ev">Evidence: Grounding DINO, Tables 3 and 7 &middot; last revised 07 Nov 2026</p></div>
+  </div>
+</section>
+
+<section class="blk" id="queue">
+  <h2>Reading queue</h2>
+  <p class="prose">Two a week, newest and most relevant first, code-bearing papers promoted. Re-ranked after every read.</p>
+  <ol class="queue">
+    <li><div><h3>Grounding DINO</h3></div><span class="state done">done</span>
+      <span class="meta">ECCV 2024 &middot; Liu et al. &middot; code, inference only</span>
+      <p class="why">The baseline every open-set detection paper is compared against.</p></li>
+    <li><div><h3>Simple Open-Vocabulary Object Detection with Vision Transformers (OWL-ViT)</h3></div><span class="state next">next</span>
+      <span class="meta">ECCV 2022 &middot; Minderer et al. &middot; code</span>
+      <p class="why">The head-only corner of the field map, to compare against deep fusion.</p></li>
+    <li><div><h3>Grounded Language-Image Pre-training (GLIP)</h3></div><span class="state">queued</span>
+      <span class="meta">CVPR 2022 &middot; Li et al. &middot; code</span>
+      <p class="why">The fusion design Grounding DINO builds on; needed to judge what is actually new.</p></li>
+  </ol>
+</section>
+
+<section class="blk" id="noclaim">
+  <h2>Do-not-claim register</h2>
+  <ul class="tight prose" style="margin-top:14px">
+    <li>"First to fuse language in the detector encoder and decoder": ruled out by <a href="01-grounding-dino.html">Grounding DINO</a>, Sections 3.1 to 3.3.</li>
+    <li>Treating Grounding DINO's COCO zero-shot numbers as novel-class results: ruled out by <a href="01-grounding-dino.html">Grounding DINO</a>, its O365 pre-training.</li>
+  </ul>
+</section>
+
+<section class="blk" id="runs">
+  <h2>How the archive runs</h2>
+  <div class="tiles c3" style="margin-top:20px">
+    <div class="tile"><h4>Selection rules</h4><p>CVPR, ICCV, ECCV, NeurIPS or equivalent. 2021 or newer. Code promoted.</p></div>
+    <div class="tile"><h4>Pace</h4><p>Two papers a week.</p></div>
+    <div class="tile"><h4>Where the files live</h4><p>This folder: one HTML page per paper plus this index.</p></div>
+  </div>
+</section>
+
+<footer><p>Small, Unseen, From Above &middot; an example archive built with the paper-semantic-map skill &middot; updated 07 Nov 2026.</p></footer>
+</div>
+
+</body>
+</html>
